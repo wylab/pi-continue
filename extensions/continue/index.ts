@@ -419,24 +419,27 @@ export default function (pi: ExtensionAPI) {
 		// prepared is cancelled rather than allowed to summarize and save the same branch in
 		// parallel with it.
 		if (compactionHandoffInFlight) return { cancel: true };
-		// Absolute-threshold veto: never let an inverted-threshold native compaction run below
-		// the policy band. Overflow (reason "overflow" / willRetry) is never vetoed, and the
-		// veto never touches a compaction this package started itself.
-		if (getActiveContinuationEventId(runtime) === undefined) {
-			const veto = await decideAbsoluteThresholdVeto(pi, ctx, event);
-			if (veto) return veto;
-		}
 		compactionHandoffInFlight = true;
-		const ownership: { adoptedEventId?: string } = {};
 		try {
-			return await prepareCompactionHandoff(event, ctx, ownership);
-		} catch (error) {
-			// Pi swallows handler failures and continues with its own summarizer, so the event
-			// this handler adopted is released instead of waiting for proof that never arrives.
-			const adoptedEventId = ownership.adoptedEventId;
-			if (adoptedEventId === undefined || !isActiveRunningContinuationEvent(runtime, adoptedEventId)) throw error;
-			releaseAdoptedContinuationCompaction(ctx, runtime, adoptedEventId, (eventId) => cleanupPendingOutputWrites(eventId));
-			return undefined;
+			// Absolute-threshold veto: never let an inverted-threshold native compaction run below
+			// the policy band. Overflow (reason "overflow" / willRetry) is never vetoed, and the
+			// veto never touches a compaction this package started itself. The veto runs inside
+			// the in-flight section so its await cannot reopen the concurrent-entry window.
+			if (getActiveContinuationEventId(runtime) === undefined) {
+				const veto = await decideAbsoluteThresholdVeto(pi, ctx, event);
+				if (veto) return veto;
+			}
+			const ownership: { adoptedEventId?: string } = {};
+			try {
+				return await prepareCompactionHandoff(event, ctx, ownership);
+			} catch (error) {
+				// Pi swallows handler failures and continues with its own summarizer, so the event
+				// this handler adopted is released instead of waiting for proof that never arrives.
+				const adoptedEventId = ownership.adoptedEventId;
+				if (adoptedEventId === undefined || !isActiveRunningContinuationEvent(runtime, adoptedEventId)) throw error;
+				releaseAdoptedContinuationCompaction(ctx, runtime, adoptedEventId, (eventId) => cleanupPendingOutputWrites(eventId));
+				return undefined;
+			}
 		} finally {
 			compactionHandoffInFlight = false;
 		}

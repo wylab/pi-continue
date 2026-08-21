@@ -4,6 +4,7 @@
   "reasoning": "inherit",
   "historyMaxTokens": null,
   "synthesisTimeoutMs": 180000,
+  "absoluteCompactThresholdTokens": 130000,
   "continuationArtifactMode": "always",
   "agentGuidePath": "AGENTS.md",
   "agentGuideSyncMode": "off",

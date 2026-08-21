@@ -132,6 +132,7 @@ Default package config:
   "reasoning": "inherit",
   "historyMaxTokens": null,
   "synthesisTimeoutMs": 180000,
+  "absoluteCompactThresholdTokens": 130000,
   "continuationArtifactMode": "always",
   "agentGuidePath": "AGENTS.md",
   "agentGuideSyncMode": "off",
@@ -152,6 +153,7 @@ Common settings:
 | `enabled` | Turns package behavior on or off. |
 | `midRunGuardEnabled` | Enables automatic mid-run continuation. |
 | `adoptNativeCompaction` | `true` by default; owns the over-threshold compaction Pi starts right after a finished assistant turn, so end-of-turn automatic compaction also saves a Continuation Ledger and resumes. Manual `/compact`, compaction while new user input is submitted, cancelled turns, and context-overflow recovery keep Pi's own summarizer. |
+| `absoluteCompactThresholdTokens` | Absolute token threshold (default `130000`, midpoint of the user-ruled 120–150k band) at which any session compacts regardless of the active model's context window. `null` disables the absolute-threshold trigger and its veto. Real context overflow (`reason: "overflow"` or `willRetry: true`) is never vetoed. |
 | `summarizerModel` | Uses the active Pi model with `"inherit"`, or a pinned `"provider/model"`. |
 | `reasoning` | Uses Pi's setting with `"inherit"`, or a model-supported thinking level. Unsupported levels are hidden in settings and clamped through Pi's `thinkingLevelMap`. |
 | `historyMaxTokens` | Optional requested history output-token budget; `null` uses Pi-derived default. The effective provider request is clamped to the summarizer model's positive max-output limit when known. |

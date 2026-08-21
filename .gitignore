@@ -1,3 +1,16 @@
 node_modules/
-*.log
+*.tgz
 .DS_Store
+.env
+.env.*
+.npmrc
+coverage/
+dist/
+.cache/
+.pi/
+CONTINUE.md
+PLAN.md
+AGENTS.md
+ARCH.md
+VISION.md
+*.log
