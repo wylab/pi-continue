@@ -91,6 +91,13 @@ Design rules:
   CustomMessageEntry as recall injection (it enters LLM context; it is never a store).
 - No knowledge net, economy, pods.
 
+## Open items
+
+- **Two-writer-resume seq edge** (continue-repairman review of PR #4, non-blocking):
+  `nextLedgerSeq` seeds from the branch — safe in-session and across single-writer resume,
+  but a stale process appending after a resume could duplicate seq. M2's authoritative
+  cross-session store must own sequence allocation (single-writer or CAS).
+
 ## Done when
 
 `PI_CODING_AGENT_DIR=<empty> node --experimental-strip-types --test --test-timeout=120000
