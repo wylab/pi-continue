@@ -71,6 +71,10 @@ function createFakePi(cwd) {
 		getThinkingLevel() {
 			return undefined;
 		},
+		appendedEntries: [],
+		appendEntry(customType, data) {
+			this.appendedEntries.push({ type: "custom", customType, data });
+		},
 		async exec(command, args, options) {
 			assert.equal(command, "git");
 			assert.deepEqual(args, ["rev-parse", "--show-toplevel"]);

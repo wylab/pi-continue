@@ -76,7 +76,46 @@ export interface CompiledPrompt {
 	};
 }
 
+export interface ForbidEntry {
+	rule: string;
+	source: string;
+}
+
+export interface EstablishedEntry {
+	claim: string;
+	evidence: string;
+	basis: string;
+	reopen: string;
+}
+
+export interface LearnedEntry {
+	lesson: string;
+	source: string;
+}
+
+export interface OpenEntry {
+	question: string;
+	verifies: string;
+}
+
+export interface NextEntry {
+	action: string;
+	outcome: string;
+}
+
+/** The seven-field v4 brief in structured form (pre-markdown). */
+export interface BriefEnvelope {
+	task: string;
+	done_when: string;
+	forbid: ForbidEntry[];
+	established: EstablishedEntry[];
+	learned: LearnedEntry[];
+	open: OpenEntry[];
+	next: NextEntry[];
+}
+
 export interface ParsedHistoryArtifacts {
+	brief: BriefEnvelope;
 	briefMarkdown: string;
 	agentGuideMd: string | undefined;
 	agentGuideChangeReason: string;
