@@ -1,10 +1,12 @@
 # Engine Domain Model (seed)
 
-Status: seed, recorded 2026-08-21. Source of truth for the engine lane's claims lives in the
-ARA at `~/mnt/ara/wylabb-engine/` (`logic/claims.md`, `logic/concepts.md`, `logic/problem.md`,
-`logic/related_work.md`); this document is the engineering-facing projection for the fork.
-Every claim below carries its falsification criterion in the ARA; reopen a claim only when its
-criterion triggers or new evidence conflicts.
+Status: seed, recorded 2026-08-21; amended 2026-08-21 for review dispositions (PR #1, Codex
+bot findings 1-2, both accepted). Claims' evidence is inline below (repo-relative paths and
+dated URLs), so this document is verifiable standalone. The lane-internal full record lives in
+the ARA on the shared ara mount (`wylabb-engine/`: `logic/claims.md`, `logic/concepts.md`,
+`logic/problem.md`, `logic/related_work.md`); the mount path is machine-local by design and is
+NOT a verification dependency. Reopen a claim only when its falsification criterion triggers
+or new evidence conflicts.
 
 ## 1. Problem
 
@@ -51,22 +53,22 @@ into an active subsystem engine, with the session as a projection of that durabl
 
 ## 3. Domain claims (falsifiable; proof in the ARA)
 
-| ID | Claim | Status |
-|----|-------|--------|
-| C01 | The seven ledger fields ship as passive slots, not active engines (`blocks.ts` parses; nothing reconciles). | supported |
-| C02 | No shipped system composes "append-only ledger → per-field engines → session-as-materialized-view". LangGraph/event-sourcing atoms exist; the composition is unclaimed. | supported |
-| C03 | The evidence-correct local core is **pi-continue + pi-intercom + pi-subagents**. `pi-crew` is a phantom (orphaned config, zero consumers); `loop.ts` is a trivial in-memory duplicate; `pi-rtk-optimizer` is orthogonal. | supported |
-| C04 | pi-intercom's extension bus is the existing revisioned cross-session state primitive; its 64 KiB/namespace cap bounds it to a contract spine. | supported |
-| C05 | Query-only (write-separated) knowledge-network access is unclaimed; HippoRAG/Graphiti/cognee/mem0/Letta all expose the write path to the agent. | supported |
-| C06 | Agent-earned internal economy is greenfield; surveyed economies are user-funded, crypto-rail, or external-revenue. | supported |
-| C07 | The provenance **basis** axis is unimplemented anywhere; evidence + reopen have a reference implementation (Veracium, MIT; `evidence_basis` explicitly deferred in its spec 0006 §1). | supported |
-| C08 | Lightweight local pod lifecycle + fleet observability is unclaimed; closest artifacts are recycle-per-invocation sandboxes and container-mode vocabularies. | supported |
+| ID | Claim | Evidence (verifiable standalone) | Status |
+|----|-------|----------------------------------|--------|
+| C01 | The seven ledger fields ship as passive slots, not active engines. | `extensions/continue/src/blocks.ts` (parses exactly the seven slots, no reconciliation); `assets/system/history_initial.md` (slot list). Falsified if blocks.ts/resume prompt drives per-field staleness/reopen logic. | supported |
+| C02 | No shipped system composes "append-only ledger → per-field engines → session-as-materialized-view". | `extensions/continue/src/ledger-viewer.ts` (ledger = same-session projection of the compaction block); langchain-ai.github.io/langgraph/concepts/persistence/ (2026-08-21; checkpoint-log atoms only). Falsified by a shipped durable ledger + per-field engines composition. | supported |
+| C03 | The evidence-correct local core is **pi-continue + pi-intercom + pi-subagents**; `pi-crew` is a phantom, `loop.ts` trivial, `pi-rtk-optimizer` orthogonal. | Local grep 2026-08-21: zero consumers of `pi-crew.json` across installed packages and the Pi host tree; pi-subagents = 211 source files (subagent tool, RPC, capability ceilings, FleetView). | supported |
+| C04 | pi-intercom's extension bus is the existing revisioned cross-session state primitive; its 64 KiB/namespace cap bounds it to a contract spine. | `pi-intercom/broker/extension-state.ts` (optimistic concurrency via `expectedRevision`; 64 KiB cap), v0.11.0 installed. | supported |
+| C05 | Query-only (write-separated) knowledge-network access is unclaimed. | Survey 2026-08-21: HippoRAG, Graphiti, cognee, mem0, Letta MemFS all expose the write path to the agent; closest principle: github.com/veracium-ai/Veracium (MIT) design rationale "add an entry point, not a parameter" (2026-08-21). | supported |
+| C06 | Agent-earned internal economy is greenfield. | Survey 2026-08-21: MyClaw (user-purchased credits, myclaw.ai), cashclaw (github.com/ertugrulakben/cashclaw, MIT — agents earn/spend but on Stripe rails), Tollgate, helio: all user-funded, crypto-rail, or external-revenue. | supported |
+| C07 | The provenance **basis** axis is unimplemented anywhere; evidence + reopen have a reference implementation. | Veracium (MIT) spec 0006 §1 defers `evidence_basis`; spec 0019's ungrounded flag checks extraction fidelity, not source support (both read 2026-08-21). | supported |
+| C08 | Lightweight local pod lifecycle + fleet observability is unclaimed. | Survey 2026-08-21: github.com/cohere-ai/cohere-terrarium (MIT, archived — recycle-per-invocation, stateless); docs.openclaw.ai/gateway/sandboxing (mode/scope/backend vocabulary); Firecracker/gVisor/Docker need a container runtime. | supported |
 
 ## 4. Gaps → engine milestones
 
 | Gap | Milestone |
 |-----|-----------|
-| G1 ledger-as-spine composition | Durable ledger on CustomEntry rows; session rebuilt via `session_before_compact` checkpoint + CustomMessageEntry recall injection. |
+| G1 ledger-as-spine composition | **M1 (session-local)**: ledger rows on `pi.appendEntry` CustomEntry (persisted in the session file, never in LLM context); session view rebuilt by reducing `ctx.sessionManager.getBranch()`; recall deltas via CustomMessageEntry. Design: `docs/spine-prototype.md`. **M2 (cross-session)**: CustomEntry rows are session-local by construction, so the *authoritative* store moves to a resource addressable across sessions (file-per-node store, sized by C04's 64 KiB bus-cap finding), with CustomEntry kept as the per-session mirror. CustomMessageEntry is recall injection only — it enters LLM context and is never a store. |
 | G2 query-only knowledge net | Swarm-written vault; model-reachable read path only. |
 | G3 internal economy | Ledger-row bookkeeping; internal prices; earned budget. |
 | G4 terrarium pods | Local pod lifecycle + fleet observability. |
