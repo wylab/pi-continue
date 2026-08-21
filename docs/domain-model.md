@@ -1,0 +1,106 @@
+# Engine Domain Model (seed)
+
+Status: seed, recorded 2026-08-21. Source of truth for the engine lane's claims lives in the
+ARA at `~/mnt/ara/wylabb-engine/` (`logic/claims.md`, `logic/concepts.md`, `logic/problem.md`,
+`logic/related_work.md`); this document is the engineering-facing projection for the fork.
+Every claim below carries its falsification criterion in the ARA; reopen a claim only when its
+criterion triggers or new evidence conflicts.
+
+## 1. Problem
+
+pi-continue 0.9.3 ships a continuation artifact (`pi-continue-artifacts/v4`) with exactly seven
+brief slots — `task`, `done_when`, `forbid`, `established`, `learned`, `open`, `next` — parsed by
+`extensions/continue/src/blocks.ts`. Those slots are **passive synthesizer output**: the
+compaction summary fills them, but nothing reconciles, enforces, or reopens them. And the
+"ledger" itself is a projection of the compaction `<continuation>` block, rebuilt inside the
+same session (`ledger-viewer.ts`) — a handoff record, not a durable substrate.
+
+**Key insight**: the seven fields are already shipped. The engine's work is not inventing fields
+but (a) making the ledger durable-first and cross-session, and (b) turning each passive slot
+into an active subsystem engine, with the session as a projection of that durable ledger.
+
+## 2. Ubiquitous language
+
+- **Ledger (spine)** — append-only durable store, primary source of truth; the session
+  (context, plan, constraints) is a derived, rebuildable projection of it.
+- **Session-as-projection** — materialized view of the durable ledger for one live session;
+  deleting the view and rebuilding from the log is guaranteed (event-sourcing / LangGraph
+  checkpoint pattern).
+- **Per-field engine** — an active subsystem reconciling one ledger field (staleness,
+  enforcement, reopen, completion), rather than a passive synthesizer slot.
+- **Knowledge network (hidden)** — vault of atomic facts + labels + typed connections, written
+  by the swarm, never surfaced as user-editable context.
+- **Query-only recall** — agents recall from the network but never write it directly; the write
+  path is a separate entry point (Veracium: "add an entry point, not a parameter").
+- **Epistemic contract** — per-claim `evidence` (who reported it), `basis` (does the source
+  support it), `reopen` (supersession/revocation/renewal); trust capped at
+  `min(author, derived_from)`.
+- **Internal economy** — agent-earned budget with internal prices (delegation cheap, direct
+  work expensive), no external payment rail; bookkeeping as ledger rows.
+- **Terrarium pod** — persistent-but-recyclable isolation unit running an unattended agent,
+  with fleet observability; local-first, no container-runtime assumption.
+- **CustomEntry** — session entry via `pi.appendEntry` (`type: "custom"`): persists extension
+  state WITHOUT entering LLM context. The ledger-row slot.
+- **CustomMessageEntry** — `type: "custom_message"`: DOES enter LLM context. The recall/evidence
+  injection slot.
+- **session_before_compact** — the hook whose return may supply `{ compaction: {...} }`,
+  replacing Pi's native summarizer (`fromExtension = true`). The ledger checkpoint hook.
+- **Extension bus** — pi-intercom's cross-process, owner-elected, revisioned shared state
+  (`commitState` with `expectedRevision`; 64 KiB per-namespace cap). Suitable for a contract
+  spine, not a full knowledge network.
+
+## 3. Domain claims (falsifiable; proof in the ARA)
+
+| ID | Claim | Status |
+|----|-------|--------|
+| C01 | The seven ledger fields ship as passive slots, not active engines (`blocks.ts` parses; nothing reconciles). | supported |
+| C02 | No shipped system composes "append-only ledger → per-field engines → session-as-materialized-view". LangGraph/event-sourcing atoms exist; the composition is unclaimed. | supported |
+| C03 | The evidence-correct local core is **pi-continue + pi-intercom + pi-subagents**. `pi-crew` is a phantom (orphaned config, zero consumers); `loop.ts` is a trivial in-memory duplicate; `pi-rtk-optimizer` is orthogonal. | supported |
+| C04 | pi-intercom's extension bus is the existing revisioned cross-session state primitive; its 64 KiB/namespace cap bounds it to a contract spine. | supported |
+| C05 | Query-only (write-separated) knowledge-network access is unclaimed; HippoRAG/Graphiti/cognee/mem0/Letta all expose the write path to the agent. | supported |
+| C06 | Agent-earned internal economy is greenfield; surveyed economies are user-funded, crypto-rail, or external-revenue. | supported |
+| C07 | The provenance **basis** axis is unimplemented anywhere; evidence + reopen have a reference implementation (Veracium, MIT; `evidence_basis` explicitly deferred in its spec 0006 §1). | supported |
+| C08 | Lightweight local pod lifecycle + fleet observability is unclaimed; closest artifacts are recycle-per-invocation sandboxes and container-mode vocabularies. | supported |
+
+## 4. Gaps → engine milestones
+
+| Gap | Milestone |
+|-----|-----------|
+| G1 ledger-as-spine composition | Durable ledger on CustomEntry rows; session rebuilt via `session_before_compact` checkpoint + CustomMessageEntry recall injection. |
+| G2 query-only knowledge net | Swarm-written vault; model-reachable read path only. |
+| G3 internal economy | Ledger-row bookkeeping; internal prices; earned budget. |
+| G4 terrarium pods | Local pod lifecycle + fleet observability. |
+| G5 basis axis | Per-claim basis verification (does the source support the fact), beyond Veracium's evidence/reopen. |
+
+## 5. Pi hook-surface facts (Pi 0.84.2; reopen on Pi upgrade)
+
+- 35 extension events; ~12 have meaningful returns.
+- `session_before_compact` = ledger checkpoint hook (extension-provided compaction,
+  `fromExtension: true`).
+- `pi.appendEntry` CustomEntry = context-free persistent ledger rows; CustomMessageEntry =
+  recall injection.
+- `ctx.sessionManager` is read-only; `pi.events` is an in-process bus only; no public
+  `compaction_end`; no delegation-lifecycle hook.
+- `loadPiInternals` is fragile — isolate behind a single adapter
+  (`extensions/continue/src/pi-internals.ts`, three-stage resolver).
+
+## 6. Constraints (owner-ruled)
+
+- MIT/Apache-2.0 dependencies only; local-first; no hosted services; no token payment rails.
+- The engine is a Pi extension (or package composing extensions), not a daemon, not a skill.
+- Pi's public `ExtensionAPI` is the only stable surface.
+- Real context overflow (`reason === "overflow"` or `willRetry === true`) is never vetoed.
+
+## 7. Baseline gate status (2026-08-21)
+
+- `engine-baseline` = pristine pi-continue@0.9.3 (npm tarball) + PR #14 + 6-file
+  absolute-threshold overlay set; byte-provenance in the baseline commit message.
+- Upstream gate: **239/239 tests pass**, plus `tsc --noEmit`, `check:json`, `check:pack`.
+  Run tests with `PI_CODING_AGENT_DIR` pointed at an empty dir — otherwise the developer
+  machine's real `~/.pi/agent/extensions/pi-continue.json` leaks into test config resolution
+  (root cause of the historical "gate hang": an unmocked `modelRegistry.find` call plus a
+  no-timeout wait loop).
+- Race harnesses (`pi-race-fix.mts` 5/5, `pi-abs-threshold.mts` 7/7) pass against the fork tree.
+- Gate catch worth remembering: the overlay's veto await originally sat between the in-flight
+  guard check and its flag set, reopening the concurrent-compaction window PR #14 closed.
+  Fixed by running the veto inside the in-flight section (commit `763676c`).
