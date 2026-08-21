@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "summarizerModel": "inherit",
+  "reasoning": "inherit",
+  "historyMaxTokens": null,
+  "synthesisTimeoutMs": 180000,
+  "continuationArtifactMode": "always",
+  "agentGuidePath": "AGENTS.md",
+  "agentGuideSyncMode": "off",
+  "midRunGuardEnabled": true,
+  "adoptNativeCompaction": true,
+  "appendCompactionMetadata": false,
+  "appendReadFileTags": false,
+  "appendModifiedFileTags": true,
+  "promptOverridePolicy": "project-override",
+  "showAfterCompact": true
+}

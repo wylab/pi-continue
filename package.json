@@ -1,0 +1,64 @@
+{
+  "name": "pi-continue",
+  "version": "0.9.3",
+  "type": "module",
+  "description": "Mid-turn continuation for long Pi tool runs: compact safely before context overflow, then resume the same session from a structured handoff ledger.",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "continue",
+    "continuation",
+    "resume",
+    "same-session",
+    "mid-turn",
+    "mid-run",
+    "tool-loop",
+    "context-limit",
+    "context-window",
+    "compaction",
+    "handoff",
+    "continuation-ledger"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tiziano-AI/pi-continue.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tiziano-AI/pi-continue/issues"
+  },
+  "homepage": "https://github.com/Tiziano-AI/pi-continue#readme",
+  "files": [
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "assets/",
+    "examples/",
+    "extensions/"
+  ],
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check:json": "node -e \"const fs=require('node:fs'); for (const f of ['package.json', ...fs.readdirSync('examples').filter((name) => name.endsWith('.json')).map((name) => 'examples/' + name)]) JSON.parse(fs.readFileSync(f, 'utf8'));\"",
+    "check:pack": "npm pack --dry-run --json --ignore-scripts >/dev/null",
+    "gate": "pnpm run typecheck && pnpm test && pnpm run check:json && pnpm run check:pack"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": ">=0.74.0",
+    "@earendil-works/pi-coding-agent": ">=0.74.0",
+    "@earendil-works/pi-tui": ">=0.74.0"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/continue/index.ts"
+    ],
+    "image": "https://raw.githubusercontent.com/Tiziano-AI/pi-continue/v0.9.3/assets/gallery/pi-continue-gallery.webp"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "^0.74.0",
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "@earendil-works/pi-tui": "^0.74.0",
+    "@types/node": "^25.6.1",
+    "typescript": "^6.0.3"
+  }
+}
