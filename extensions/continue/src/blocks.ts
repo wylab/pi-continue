@@ -1,4 +1,4 @@
-import type { HistoryArtifactParseResult, ParsedHistoryArtifacts } from "./types.ts";
+import type { BriefEnvelope, EstablishedEntry, ForbidEntry, HistoryArtifactParseResult, LearnedEntry, NextEntry, OpenEntry, ParsedHistoryArtifacts } from "./types.ts";
 
 const HISTORY_ARTIFACT_VERSION = "pi-continue-artifacts/v4";
 const NO_AGENT_GUIDE_REPLACEMENT_REASON = "The handoff model returned no agent guide replacement.";
@@ -17,43 +17,6 @@ const ESTABLISHED_BASIS = new Set<string>([
 // against the full v4 contract before any of them is accepted.
 const REASONING_BLOCK_PATTERN = /<(think|thinking|reasoning|reflection)>[\s\S]*?<\/\1>/gi;
 const FENCED_BLOCK_PATTERN = /(?:^|\r?\n)[ \t]*(?:`{3,}|~{3,})[^\r\n]*\r?\n([\s\S]*?)\r?\n[ \t]*(?:`{3,}|~{3,})[ \t]*(?=\r?\n|$)/g;
-
-interface ForbidEntry {
-	rule: string;
-	source: string;
-}
-
-interface EstablishedEntry {
-	claim: string;
-	evidence: string;
-	basis: string;
-	reopen: string;
-}
-
-interface LearnedEntry {
-	lesson: string;
-	source: string;
-}
-
-interface OpenEntry {
-	question: string;
-	verifies: string;
-}
-
-interface NextEntry {
-	action: string;
-	outcome: string;
-}
-
-interface BriefEnvelope {
-	task: string;
-	done_when: string;
-	forbid: ForbidEntry[];
-	established: EstablishedEntry[];
-	learned: LearnedEntry[];
-	open: OpenEntry[];
-	next: NextEntry[];
-}
 
 interface AgentGuideUpdate {
 	content: string | undefined;
@@ -275,6 +238,7 @@ function readHistoryArtifacts(parsed: unknown): ParsedHistoryArtifacts | undefin
 	const agentGuideUpdate = parseAgentGuideUpdate(parsed.agentGuideUpdate);
 	if (!agentGuideUpdate) return undefined;
 	return {
+		brief,
 		briefMarkdown: renderBriefEnvelope(brief),
 		agentGuideMd: agentGuideUpdate.content,
 		agentGuideChangeReason: agentGuideUpdate.reason,

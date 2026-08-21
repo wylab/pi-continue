@@ -78,6 +78,7 @@ test("parseHistoryArtifacts returns diagnostics for empty, non-JSON, and wrong-s
 test("parseHistoryArtifacts accepts the current v4 structured JSON artifact contract", () => {
 	const parsed = parseOk(validArtifacts);
 	assert.deepEqual(parsed, {
+		brief: briefEnvelope(),
 		briefMarkdown: [
 			"## Task\nFinish the current continuation ledger update.",
 			"## Done When\nAll gates pass and the current v4 contract is documented.",

@@ -25,6 +25,7 @@ import { buildContinuationDetails, buildContinuationSynthesisTelemetry, combineP
 import { describeSynthesisAbort } from "./src/synthesis-error.ts";
 import { buildLedgerSnapshot, createContinuationLedgerOverlayController } from "./src/ledger-viewer.ts";
 import { decideAbsoluteThresholdVeto, decideAdoptedCompactionTrigger, enforceAbsoluteThresholdCompaction, runMidRunGuard } from "./src/mid-run-guard.ts";
+import { appendLedgerRow, buildBriefCheckpointRow, buildProofMarkRow, nextLedgerSeq } from "./src/ledger-rows.ts";
 import { PromptPassError, runPromptPass } from "./src/model.ts";
 import { loadPiInternals } from "./src/pi-internals.ts";
 import { compileHistoryPrompt, withArtifactRepairReminder } from "./src/prompt.ts";
@@ -353,6 +354,12 @@ export default function (pi: ExtensionAPI) {
 			releaseAdoptedContinuationCompaction(ctx, runtime, ownerEventId, (eventId) => cleanupPendingOutputWrites(eventId));
 			return undefined;
 		}
+		// Spine M1: persist the synthesized brief as an append-only ledger row (CustomEntry,
+		// durable in the session file, never in LLM context) before the compaction result
+		// exists — the ledger is the source, the summary a rendering of it.
+		if (runtime.ledgerRowSeq === undefined) runtime.ledgerRowSeq = nextLedgerSeq(ctx.sessionManager.getBranch());
+		appendLedgerRow(pi, buildBriefCheckpointRow({ seq: runtime.ledgerRowSeq, eventId: ownerEventId, brief: historyArtifacts.brief }));
+		runtime.ledgerRowSeq += 1;
 		const continuationArtifactWriteId = config.continuationArtifactMode === "always" ? randomUUID() : undefined;
 		if (continuationArtifactWriteId) {
 			pendingOutputWrites.set(continuationArtifactWriteId, {
@@ -472,6 +479,10 @@ export default function (pi: ExtensionAPI) {
 			return;
 		}
 		if (activeEventId && details.continuationEventId !== activeEventId) return;
+		// Spine M1: record the accepted compaction proof as an append-only ledger row.
+		if (runtime.ledgerRowSeq === undefined) runtime.ledgerRowSeq = nextLedgerSeq(ctx.sessionManager.getBranch());
+		appendLedgerRow(pi, buildProofMarkRow({ seq: runtime.ledgerRowSeq, eventId: details.continuationEventId, compactionEntryId: event.compactionEntry.id }));
+		runtime.ledgerRowSeq += 1;
 		const acceptedActiveProof = activeEventId !== undefined && details.continuationEventId === activeEventId
 			? verifyContinuationCompactionProof(ctx, runtime, activeEventId, event.compactionEntry.id)
 			: false;

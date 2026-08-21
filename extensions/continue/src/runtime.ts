@@ -40,6 +40,8 @@ export type ContinuationRequestSource = ContinuationEventSource;
 export interface ContinuationRuntimeState extends ResumeProofRuntimeState, ContinuationTurnProvenance {
 	latestLedger: ContinuationLedgerSnapshot | undefined;
 	lastNoCompactableGuardKey: string | undefined;
+	/** Monotonic per-session ledger-row sequence; seeded from the branch on first append (M1 spine). */
+	ledgerRowSeq: number | undefined;
 }
 
 export interface ContinuationRequest {
@@ -111,6 +113,7 @@ export function createContinuationRuntimeState(): ContinuationRuntimeState {
 		pendingResumeDispatch: undefined,
 		latestLedger: undefined,
 		lastNoCompactableGuardKey: undefined,
+		ledgerRowSeq: undefined,
 		adoptionCheckpoint: undefined,
 		lastAssistantStopReason: undefined,
 		latestEvent: undefined,
