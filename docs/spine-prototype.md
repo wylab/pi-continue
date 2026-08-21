@@ -84,8 +84,11 @@ Design rules:
 
 - No change to the compaction summary format or the v4 markdown contract.
 - No staleness/enforcement engines (C01 activation is M2+).
-- No cross-session restore (rows are durable in the session file; cross-session spine comes
-  with the extension-bus/file-store decision, informed by C04's 64 KiB cap).
+- No cross-session restore: CustomEntry rows are durable **in the session file only**
+  (session-local by construction; review finding PR #1-2, accepted). The cross-session
+  authoritative store is M2: a file-per-node resource addressable across sessions (informed
+  by C04's 64 KiB bus cap), with CustomEntry kept as the per-session mirror and
+  CustomMessageEntry as recall injection (it enters LLM context; it is never a store).
 - No knowledge net, economy, pods.
 
 ## Done when
